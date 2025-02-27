@@ -1,0 +1,118 @@
+body{
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(168deg, #67bcf5, #122f4c);
+  min-height: 100vh;
+  margin: 0;
+  color: #333;
+}
+.loginPage {
+    display: flex;
+    justify-content: center;
+    align-items: center;  
+  }
+  
+  .face-recognition-container {
+    background: rgba(255, 255, 255, 0.9);
+    padding: 2rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    max-width: 600px;
+    width: 100%;
+    backdrop-filter: blur(10px);
+  }
+  
+  .logo {
+    width: 280px;
+    height: auto;
+    
+  }
+  
+  .title {
+    font-size: 2rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.5rem;
+  }
+  
+  .subtitle {
+    font-size: 1rem;
+    color: #555;
+    margin-bottom: 2rem;
+  }
+  
+  .webcam-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  }
+  
+  .webcam {
+    width: 100%;
+    display: block;
+  }
+  
+  .capture-button {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 30px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  }
+  
+  .capture-button:hover {
+    transform: translateX(-50%) scale(1.05);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  }
+  
+  .capture-button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
+  
+  .success-container {
+    margin-top: 2rem;
+    text-align: center;
+  }
+  
+  .captured-image {
+    max-width: 100%;
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  }
+  
+  .success-image {
+    width: 100px;
+    margin-top: 1rem;
+  }
+  
+  .error-container {
+    margin-top: 2rem;
+    text-align: center;
+  }
+  
+  .result-text {
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: #333;
+    margin: 0;
+  }
+  .error{
+    color: rgb(146, 5, 5);
+  }
+  .success{
+    color: rgb(3, 127, 45);
+  }
