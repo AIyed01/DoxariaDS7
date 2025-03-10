@@ -10,10 +10,83 @@ from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from deep_translator import GoogleTranslator
 import io
-import pygame
 from gtts import gTTS
+from django.http import  FileResponse
 
-# Charger les visages connus depuis le dossier People/face/
+import uuid
+import pygame
+
+## super user login
+ADMIN_CREDENTIALS = {
+    "admin@doxaria.tn": "password123"
+}
+# Chemin de l'image de l'admin
+ADMIN_IMAGE_PATH = os.path.join(settings.MEDIA_ROOT, "admin", "a.jpg")
+
+@csrf_exempt
+def admin_login(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            email = data.get("email")
+            password = data.get("password")
+            image_data = data.get("image")  # Peut être None au début
+            print(email)
+            # 🔹 Vérification des identifiants (remplace avec une vraie validation)
+            if email != "admin@doxaria.tn" or password != "admin123":
+                return JsonResponse({"error": "Identifiants incorrects"}, status=401)
+
+            # 🔹 Si aucune image n'est envoyée, demander la reconnaissance faciale
+            if not image_data:
+                return JsonResponse({"message": "Identifiants corrects. Capturez une image."})
+
+            # 🔹 Décoder l'image Base64 envoyée
+            image_data = image_data.split(",")[1]
+            image_bytes = base64.b64decode(image_data)
+
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_img:
+                temp_img.write(image_bytes)
+                temp_path = temp_img.name
+
+            # 🔹 Charger l'image de l'admin et l'image capturée
+            if not os.path.exists(ADMIN_IMAGE_PATH):
+                return JsonResponse({"error": "Image de l'admin introuvable"}, status=500)
+
+            known_image = face_recognition.load_image_file(ADMIN_IMAGE_PATH)
+            captured_image = face_recognition.load_image_file(temp_path)
+
+            # 🔹 Encoder les visages
+            known_encoding = face_recognition.face_encodings(known_image)
+            captured_encoding = face_recognition.face_encodings(captured_image)
+
+            if not known_encoding or not captured_encoding:
+                return JsonResponse({"error": "Aucun visage détecté"}, status=400)
+
+            # 🔹 Comparer les visages
+            match = face_recognition.compare_faces([known_encoding[0]], captured_encoding[0])
+            if match[0]:
+                return JsonResponse({"recognized": "ADMIN"})
+            else:
+                return JsonResponse({"error": "Visage non reconnu"}, status=401)
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
+    return JsonResponse({"error": "Méthode non autorisée"}, status=405)
+
+
+
+
+
+
+
+
+
+
+
+
+### reconnaissance faciale
+# Charger les visages connus depuis le dossier Media/users/
 path = path = os.path.join(settings.MEDIA_ROOT, 'users') 
 images = []
 classNames = []
@@ -128,57 +201,33 @@ def translate_data(request):
 
 #### text to speech
 
-def text_to_speech(phrase, language):
-    # Map des langues
-    lang_map = {
-        "english": "en",
-        "french": "fr",
-        "arabic": "ar"
-    }
-
-    if language.lower() not in lang_map:
-        print("Language not supported.")
-        return
-
-    # Générer le fichier audio dans un buffer en mémoire
-    tts = gTTS(text=phrase, lang=lang_map[language.lower()], slow=False)
-    fp = io.BytesIO()
-    tts.write_to_fp(fp)
-    fp.seek(0)  # Remettre le pointeur au début du fichier audio
-
-    # Initialiser pygame et lire le fichier
-    pygame.mixer.init()
-    pygame.mixer.music.load(fp, "mp3")
-    pygame.mixer.music.play()
-
-    while pygame.mixer.music.get_busy():
-        pygame.time.Clock().tick(10)
-
-
 @csrf_exempt
 def handle_translation_and_speech(request):
     if request.method == "POST":
         try:
-            # Récupérer les données envoyées
             data = json.loads(request.body)
-            phrase = data.get("phrase")  # Phrase à traduire
-            language = data.get("language", "english")  # Langue cible (par défaut anglais)
+            phrase = data.get("phrase")
+            language = data.get("language", "english")
+            print("data " ,phrase)
+            
+            translated_phrase = GoogleTranslator(source="fr", target=language).translate(phrase)
 
-            if not phrase:
-                return JsonResponse({"error": "Phrase is required"}, status=400)
+            #translated_phrase = GoogleTranslator(source="auto", target=language).translate(phrase)
+            print("translated ",translated_phrase)
+            # Générer le fichier audio
+            tts = gTTS(text=translated_phrase, lang=language, slow=False)
+            fp = io.BytesIO()
+            tts.write_to_fp(fp)
+            fp.seek(0)
 
-            # Traduire les données
-            translated_data = translate_data(data, language)
+            # Jouer l'audio avec pygame
+            pygame.mixer.init()
+            pygame.mixer.music.load(fp, "mp3")
+            pygame.mixer.music.play()
 
-            # Utiliser la phrase traduite pour la synthèse vocale
-            translated_phrase = translated_data.get("phrase", phrase)
-
-            # Appeler la fonction text_to_speech pour la lecture du texte traduit
-            text_to_speech(translated_phrase, language)
-
-            return JsonResponse({"translated": translated_data})
+            return JsonResponse({"message": "Audio played successfully","translated_phrase":translated_phrase})
 
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)
 
-    return JsonResponse({"error": "Method not allowed"}, status=405)
+    return JsonResponse({"error": "Invalid request method"}, status=405)
