@@ -1,0 +1,94 @@
+.login-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 90vh;
+    background: transparent;
+
+  }
+  
+  .login-form, .face-verification {
+    background: var(--surface);
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+  }
+  
+  .login-form h2, .face-verification h2 {
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+  }
+  
+  input {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid var(--secondary);
+    border-radius: 8px;
+    
+  }
+  
+  .btn {
+    width: auto;
+    padding: 10px;
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-top: 1rem;
+  }
+  
+  .btn:hover {
+    background: var(--primary-dark);
+  }
+  
+  .face-verification p {
+    color: var(--text-secondary);
+  }
+  .error-message{
+    color: rgb(146, 5, 5);
+  }
+  .webcam-wrapper{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.9);
+  }
+  .face-verification-container{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 15px;
+    padding: 5%;
+  }
+  .face-verification-container .title{
+    margin-bottom: 15px;
+    
+  }
+  .success-message{
+    color: rgb(3, 127, 45);
+  }
+  .logo {
+    width: 280px;
+    height: auto;
+    
+  }
+  .webcam-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+    margin:  auto;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  }
+  .webcam {
+    width: 100%;
+    display: block;
+  }

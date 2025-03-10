@@ -60,7 +60,8 @@ const FaceRecognition = (props) => {
       // If face is recognized, navigate to home page after 3 seconds
       if (response.data.recognized !== "false") {
         setTimeout(() => {
-          props.handleLogin(true);
+          props.handleLogin(true,response.data.recognized);
+          // set user
           navigate("/"); // Navigate to home page
         }, 3000);
       }
@@ -77,6 +78,7 @@ const FaceRecognition = (props) => {
   };
 
   return (
+    
     <div className="loginPage">
     <div className="face-recognition-container">
       <img src="/DoxLogo.png" alt="Dox Logo" className="logo" />
@@ -110,7 +112,8 @@ const FaceRecognition = (props) => {
           <p className="error">Please try again.</p>
         </div>
       )}
-    </div></div>
+    </div>
+    </div>
   );
 };
 

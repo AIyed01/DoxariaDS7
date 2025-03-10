@@ -4,14 +4,14 @@ import "./home.css";
 import { FaVolumeUp, FaUserCircle } from "react-icons/fa";
 import axios from "axios";
 
-const NavBar = ({ handleLogout }) => {
+const NavBar = ({ handleLogout,user }) => {
   const [showDropdown, setShowDropdown] = useState(false);
-  return (
+   return (
     <div className="header">
       <img src="/DoxLogo.png" alt="Dox Logo" className="logo" />
       <div className="user-icon" onClick={() => setShowDropdown(!showDropdown)}>
-        <FaUserCircle size={20} />
-        <h4>Eya-Lamouri</h4>
+        
+      <h4> {user}</h4>
         {showDropdown && (
           <div className="dropdown-menu">
             <button onClick={handleLogout}>Logout</button>
@@ -28,7 +28,10 @@ const Home = (props) => {
   const [language, setLanguage] = useState("fr");
   const [translatedData, setTranslatedData] = useState(null);
   const [selectedImageName, setSelectedImageName] = useState(null);
-
+  const [user, setUser] = useState(() => {
+    return JSON.parse(localStorage.getItem("user")) || null;
+  });
+  
   const Logout = () => {
     props.handleLogout();
     navigate("/login");
@@ -72,6 +75,31 @@ const Home = (props) => {
     }
   };
 
+  const readTableContent = async () => {
+    const textToRead = extractTableContent(data);
+    console.log("Données envoyées à l'API:", textToRead);
+
+    try {
+      const response = await axios.post("http://127.0.0.1:8000/api/text-to-speech/", {
+        phrase: textToRead,
+        language: language, // La langue sélectionnée
+      });
+     
+    } catch (error) {
+      console.error("Erreur lors de la lecture du texte :", error);
+    }
+  };
+  
+  // Fonction pour extraire le texte du tableau sous forme de chaîne
+  const extractTableContent = (data) => {
+    let text = `Sexe: ${data.sexe}, Age: ${data.age}, Médecin: ${data.Doctor}.` ;
+    text += "";
+    data.R.forEach((entry) => {
+      text += `Le ${entry.date}, ${entry.description}.` ;
+    });
+    return text;
+  };
+  
   const displayData = translatedData || data;
   const headers = Object.keys(displayData).filter((key) => key !== "R" && key !== "language");
 
@@ -79,7 +107,7 @@ const Home = (props) => {
 
   return (
     <div>
-      <NavBar handleLogout={Logout} />
+      <NavBar handleLogout={Logout} user={props.user} />
       <div className="home-container">
         <div className="upload-section">
           <p>Upload your Image.. To extract your data</p>
@@ -149,7 +177,7 @@ const Home = (props) => {
               {isFraud && <p className="fraud-detection">⚠ Fraud detection: A male cannot visit a gynecologist.</p>}
             </div>
             <div className="icons-container">
-              <FaVolumeUp className="icon" title="Lire à haute voix" />
+              <FaVolumeUp className="icon" title="Lire à haute voix" onClick={readTableContent} />
             </div>
           </div>
         </div>
