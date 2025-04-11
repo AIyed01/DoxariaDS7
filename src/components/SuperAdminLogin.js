@@ -12,11 +12,14 @@ const SuperAdminLogin = (props) => {
   const [recognizedName, setRecognizedName] = useState(null);
   const navigate = useNavigate();
   const webcamRef = useRef(null);
-
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFaceLoading, setIsFaceLoading] = useState(false);
+  
   // 🔹 Étape 1 : Vérification Email + Password
   const handleLogin = async (e) => {
     e.preventDefault();
     setErrorMessage("");
+    setIsLoading(true);
 
     if (!email || !password) {
       setErrorMessage("Veuillez entrer un email et un mot de passe valides.");
@@ -30,8 +33,10 @@ const SuperAdminLogin = (props) => {
         { headers: { "Content-Type": "application/json" } }
       );
 
-      if (response.status === 200) {
-        setIsFaceVerification(true); // Passer à la reconnaissance faciale
+      if (response.data.message === "Credentials verified. Face recognition required") {
+        setIsFaceVerification(true);
+      } else {
+        setErrorMessage("Unexpected response from server");
       }
     } catch (error) {
       if (error.response && error.response.status === 401) {
@@ -39,40 +44,52 @@ const SuperAdminLogin = (props) => {
       } else {
         setErrorMessage("Erreur de connexion au serveur.");
       }
+    }finally {
+      setIsLoading(false);
     }
   };
 
   // 🔹 Étape 2 : Capture de l'image et envoi au backend
   const captureImage = async () => {
+    setIsFaceLoading(true);
     const imageSrc = webcamRef.current.getScreenshot();
     setCapturedImage(imageSrc);
-    setErrorMessage(""); // Effacer les erreurs précédentes
-
+    setErrorMessage("");
+  
     try {
       const response = await axios.post(
         "http://127.0.0.1:8000/api/admin-login/",
-        { email, password, image: imageSrc },
+        { 
+          email, 
+          password, 
+          image: imageSrc 
+        },
         { headers: { "Content-Type": "application/json" } }
       );
-
-      if (response.status === 200) {
-        if (response.data.recognized && response.data.recognized !== "false") { 
-          setRecognizedName(response.data.recognized); 
-          setTimeout(() => {  
-          props.handleLogin(true,response.data.recognized,true)
-            // set user
-            navigate("/"); // Navigate to home page
-          }, 3000);
-        } else {
-          setErrorMessage("Visage non reconnu 😔. Veuillez réessayer.");
-          setCapturedImage(null); // Permet de réessayer
-        }
+  
+      if (response.data.success) {
+        // Successful face recognition
+        
+        setRecognizedName(response.data.user);
+        setTimeout(()=>{
+          props.handleLogin(true, "ADMIN", true); // Assuming your backend returns "ADMIN"
+          navigate("/");
+        },3000)
+        
+      } else if (response.data.error) {
+        setErrorMessage(response.data.error);
+        setCapturedImage(null);
       }
     } catch (error) {
-      setErrorMessage("Unreconnized Face.");
+      setErrorMessage(
+        error.response?.data?.error || 
+        "Face verification failed. Please try again."
+      );
+      setCapturedImage(null);
+    }finally {
+      setIsFaceLoading(false);
     }
   };
-
   return (
     <div className="login-container">
       
@@ -84,8 +101,8 @@ const SuperAdminLogin = (props) => {
           
           
           <input
-            type="email"
-            placeholder="Email"
+            type="text"
+            placeholder="Username"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -99,7 +116,15 @@ const SuperAdminLogin = (props) => {
             required
           />
           
-          <button type="submit" className="btn">Login</button>
+          <button 
+            type="submit" 
+            className="btn"
+            disabled={isLoading}
+          >
+            {isLoading ? "Verifying..." : "Login"}
+          </button>
+
+          
           {errorMessage && <p className="error-message">{errorMessage}</p>}
         </form>
       ) : (
@@ -120,7 +145,13 @@ const SuperAdminLogin = (props) => {
               
             </div>
             <div>
-            <button onClick={captureImage} className="btn">Verify</button>
+            <button 
+            onClick={captureImage} 
+            className="btn"
+            disabled={isFaceLoading}
+          >
+            {isFaceLoading ? "Processing..." : "Verify"}
+          </button>
             {errorMessage && <p className="error-message">{errorMessage}</p>}
           </div></>
           ) : (

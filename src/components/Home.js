@@ -28,6 +28,7 @@ const Home = (props) => {
   const [language, setLanguage] = useState("fr");
   const [translatedData, setTranslatedData] = useState(null);
   const [selectedImageName, setSelectedImageName] = useState(null);
+  const [documentType, setDocumentType] = useState(null);
   const [user, setUser] = useState(() => {
     return JSON.parse(localStorage.getItem("user")) || null;
   });
@@ -68,10 +69,26 @@ const Home = (props) => {
     }
   };
 
-  const handleImageUpload = (event) => {
-    const file = event.target.files[0]; // Prendre le premier fichier sélectionné
+  const handleImageUpload = async (event) => {
+    const file = event.target.files[0];
     if (file) {
-      setSelectedImageName(file.name); // Mettre à jour le nom du fichier sélectionné
+      setSelectedImageName(file.name);
+  
+      const formData = new FormData();
+      formData.append("image", file);
+  
+      try {
+        const response = await axios.post("http://127.0.0.1:8000/api/classify/", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+  
+        console.log("Prediction response:", response.data);
+        setDocumentType(response.data.label); // stocke le type de document
+      } catch (error) {
+        console.error("Erreur lors de l'envoi de l'image:", error);
+      }
     }
   };
 
@@ -136,9 +153,12 @@ const Home = (props) => {
                   <option value="en">Anglais</option>
                 </select>
               </div>
-              <p>
-                Document Type: <strong>Bulletin de soin</strong>
-              </p>
+              {documentType && (
+                <p>
+                  Document Type: <strong>{documentType}</strong>
+                </p>
+              )}
+
 
               <table className="data-table">
                 <thead>
