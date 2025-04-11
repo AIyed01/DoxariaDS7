@@ -11,11 +11,14 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+import os 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
+SECURE_ROOT = os.path.join(BASE_DIR, 'secure_files')
+if not os.path.exists(SECURE_ROOT):
+    os.makedirs(SECURE_ROOT)
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
@@ -54,7 +57,22 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# Password hashers
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+    'django.contrib.auth.hashers.Argon2PasswordHasher',
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+]
+
+# Session settings
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = True  # For HTTPS
+SESSION_COOKIE_SAMESITE = 'Lax'
+
+
 ROOT_URLCONF = 'Doxaria.urls'
+
 
 TEMPLATES = [
     {
@@ -78,13 +96,17 @@ WSGI_APPLICATION = 'Doxaria.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'djongo',
+        'NAME': 'doxaria_db',
+        'ENFORCE_SCHEMA': False,
+        'CLIENT': {  
+            'host': 'mongodb://localhost:27017',
+        }
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -125,7 +147,7 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
-import os 
+
 STATIC_URL = 'static/'
 MEDIA_ROOT = os.path.join(BASE_DIR,'Media')
 MEDIA_URL ='/Media/'

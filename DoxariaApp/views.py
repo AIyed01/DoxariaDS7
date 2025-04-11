@@ -15,11 +15,16 @@ from django.http import  FileResponse
 
 import uuid
 import pygame
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login
 
+"""
 ## super user login
 ADMIN_CREDENTIALS = {
     "admin@doxaria.tn": "password123"
 }
+"""
+"""
 # Chemin de l'image de l'admin
 ADMIN_IMAGE_PATH = os.path.join(settings.MEDIA_ROOT, "admin", "a.jpg")
 
@@ -74,10 +79,194 @@ def admin_login(request):
 
     return JsonResponse({"error": "Méthode non autorisée"}, status=405)
 
+"""
+"""sumary_line
+
+"""
+
+import tensorflow as tf
+from io import BytesIO
+
+# Get the path of the current working directory where manage.py is located
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Correct the model path to point to the same directory as manage.py
+MODEL_PATH = os.path.join(BASE_DIR, "modeleclassification.h5")
+# Try to load the model
+try:
+    model = tf.keras.models.load_model(MODEL_PATH)
+    MODEL_LOADED = True
+except Exception as e:
+    print(f"Failed to load model: {e}")
+    MODEL_LOADED = False
+
+# Check if the model is loaded
+if MODEL_LOADED:
+    print("Model loaded successfully!")
+else:
+    print("Failed to load model.")
+
+
+# Labels des classes
+class_labels = ["Bulletin de soin", "Ordonnance", "Other"]
+
+@csrf_exempt
+def predict_image(request):
+    if not MODEL_LOADED:
+        return JsonResponse({'error': 'Model not loaded'}, status=503)
+    
+    if request.method == 'POST':
+        img_file = request.FILES.get('image')
+        if img_file:
+            try:
+                img_bytes = BytesIO(img_file.read())  # Convertir en BytesIO
+                img = tf.keras.preprocessing.image.load_img(img_bytes, target_size=(224, 224))
+                img_array = tf.keras.preprocessing.image.img_to_array(img)
+                img_array = np.expand_dims(img_array, axis=0)
+                img_array /= 255.0
+
+                predictions = model.predict(img_array)
+                predicted_class = np.argmax(predictions, axis=1)[0]
+                confidence = float(np.max(predictions)) * 100
+                predicted_label = class_labels[predicted_class]
+
+                return JsonResponse({
+                    'label': predicted_label,
+                    'confidence': f"{confidence:.2f}%"
+                })
+            except Exception as e:
+                return JsonResponse({'error': str(e)}, status=500)
+        else:
+            return JsonResponse({'error': 'Aucune image reçue'}, status=400)
+    return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
 
 
 
 
+
+
+
+# In DoxariaApp/views.py
+from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
+
+# Admin face image path
+try:
+    ADMIN_IMAGE_PATH = os.path.join(settings.SECURE_ROOT, 'admin_face.jpg')
+    if not os.path.exists(ADMIN_IMAGE_PATH):
+        raise ImproperlyConfigured("Admin face image not found at configured location")
+except AttributeError:
+    raise ImproperlyConfigured(
+        "SECURE_ROOT not configured in settings. "
+        "Please add SECURE_ROOT to your settings.py"
+    )
+
+@csrf_exempt
+def admin_login(request):
+    if request.method != "POST":
+        return JsonResponse(
+            {"error": "Method not allowed"}, 
+            status=405
+        )
+
+    try:
+        data = json.loads(request.body)
+        username = data.get("email")
+        password = data.get("password")
+        image_data = data.get("image")
+
+        # Validate required fields
+        if not username or not password:
+            return JsonResponse(
+                {"error": "username and password are required"},
+                status=400
+            )
+
+        # Authenticate credentials
+        user = authenticate(request, username=username, password=password)
+        if not user or not user.is_superuser:
+            return JsonResponse(
+                {"error": "Invalid admin credentials"},
+                status=401
+            )
+
+        # If no image provided, request face verification
+        if not image_data:
+            return JsonResponse(
+                {
+                    "message": "Credentials verified. Face recognition required",
+                    "next_step": "face_verification"
+                },
+                status=202
+            )
+
+        # Verify face image - Updated to match recognize_face approach
+        try:
+            # Decode base64 image
+            image_data = image_data.split(",")[1]
+            image_bytes = base64.b64decode(image_data)
+            
+            # Create temp file for face comparison
+            with tempfile.NamedTemporaryFile(suffix=".jpg", mode='wb', delete=False) as temp_img:
+                temp_img.write(image_bytes)
+                temp_path = temp_img.name
+                os.chmod(temp_path, 0o644)
+                
+                # Load images for comparison (using the same approach as recognize_face)
+                img = cv2.imread(temp_path)
+                imgS = cv2.resize(img, (0, 0), None, 0.25, 0.25)
+                imgS = cv2.cvtColor(imgS, cv2.COLOR_BGR2RGB)
+                
+                # Load admin image with same processing
+                admin_img = cv2.imread(ADMIN_IMAGE_PATH)
+                admin_imgS = cv2.resize(admin_img, (0, 0), None, 0.25, 0.25)
+                admin_imgS = cv2.cvtColor(admin_imgS, cv2.COLOR_BGR2RGB)
+                
+                # Get face encodings for both images
+                admin_encoding = face_recognition.face_encodings(admin_imgS)
+                captured_encoding = face_recognition.face_encodings(imgS)
+                
+                if not admin_encoding or not captured_encoding:
+                    return JsonResponse(
+                        {"error": "No faces detected in one or both images"},
+                        status=400
+                    )
+                
+                # Compare faces using distance (like in recognize_face)
+                faceDis = face_recognition.face_distance([admin_encoding[0]], captured_encoding[0])
+                
+                # Consider it a match if distance is below threshold (0.6 is default)
+                if faceDis[0] > 0.6:
+                    return JsonResponse(
+                        {"error": "Face verification failed"},
+                        status=401
+                    )
+                
+                # Create authenticated session
+                login(request, user)
+
+                return JsonResponse({
+                    "success": "Admin authenticated successfully",
+                    "session_id": request.session.session_key,
+                    "requires_reauth_after": 3600,  # 1 hour in seconds
+                    "user" : username
+                })
+
+        except Exception as face_error:
+            return JsonResponse(
+                {"error": f"Face verification error: {str(face_error)}"},
+                status=500
+            )
+
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {"error": "Invalid JSON data"},
+            status=400
+        )
+    except Exception as e:
+        return JsonResponse(
+            {"error": f"Server error: {str(e)}"},
+            status=500
+        )
 
 
 
@@ -231,3 +420,37 @@ def handle_translation_and_speech(request):
             return JsonResponse({"error": str(e)}, status=500)
 
     return JsonResponse({"error": "Invalid request method"}, status=405)
+
+
+from rest_framework import generics
+from .models import User
+from .serializers import UserSerializer
+from rest_framework.response import Response
+from rest_framework import status
+
+class UserCreateView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+class UserListView(generics.ListAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+
+class UserDeleteView(generics.DestroyAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    lookup_field = 'pk'
+
+    def delete(self, request, *args, **kwargs):
+        instance = self.get_object()
+        
+        # Delete the associated image file if it exists
+        try:
+            if instance.image and os.path.isfile(instance.image.path):
+                os.remove(instance.image.path)
+        except Exception as e:
+            print(f"Erreur lors de la suppression de l'image : {e}")
+
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
