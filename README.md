@@ -41,7 +41,7 @@ We follow the **Team Data Science Process (TDSP)** to ensure a structured and ef
 
 **3) Modeling** 🤖  
 - Train AI models for handwriting recognition and text extraction.  
-- Implement NLP techniques for better accuracy.  
+- Implement AI techniques for better accuracy.  
 
 **4) Deployment** 🚀  
 - Integrate the solution into a user-friendly platform.  
@@ -62,5 +62,5 @@ MongoDB – NoSQL database for storing extracted and structured data
 GitHub Actions – CI/CD pipeline automation
 
 ## 📌 Keywords
-Esprit School of Engineering | Data Science | Handwriting Recognition | AI in Healthcare | Document Digitization | Insurance Fraud Detection | TDSP | Machine Learning | NLP | Medical AI
+Esprit School of Engineering | Data Science | Handwriting Recognition | AI in Healthcare | OCR | Document Digitization | Insurance Fraud Detection | TDSP | Machine Learning | Medical AI
 
