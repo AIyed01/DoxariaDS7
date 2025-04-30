@@ -94,3 +94,4 @@ def forward_image(predictor: OCRPredictor, image: np.ndarray, device: torch.devi
         seg_map = out["out_map"].to("cpu").numpy()
 
     return seg_map
+
