@@ -1,0 +1,15 @@
+DATASET_DIR="C:\\Users\\walid\\Downloads\\DSPI\\data_doxaria\\dataset"
+
+all: load_data preprocess train
+
+load_data:
+	python -c "from data_loader import *; X, y = load_images_from_folder($(DATASET_DIR))"
+
+preprocess:
+	python -c "from preprocess import *; from data_loader import *; X_train, y_train = load_images_from_folder($(DATASET_DIR)); create_generators(X_train, y_train)"
+
+train:
+	python -c "from train import *; from data_loader import *; from preprocess import *; X_train, y_train = load_images_from_folder($(DATASET_DIR)); train_gen = create_generators(X_train, y_train); model = build_model(); train_model(model, train_gen)"
+
+predict:
+	python -c "from predict import *; from tensorflow.keras.models import load_model; model = load_model('model.h5'); print(predict_image(model, 'path/to/image.png', class_names=['Bulletin_de_soin', 'Ordonnance', 'Other']))"
