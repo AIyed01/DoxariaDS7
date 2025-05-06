@@ -1,4 +1,5 @@
 "Media/" 
 "face_recognition_models-master/"
+"secure_files/"
 __pycache__/
 *.pyc
