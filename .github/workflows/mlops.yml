@@ -17,7 +17,7 @@ jobs:
 
     - name: Run pipeline
       run: |
-        python pipeline1/load_data.py
+        python pipeline1/data_loader.py
         python pipeline1/preprocess.py
         python pipeline1/train.py
         python pipeline1/predict.py
