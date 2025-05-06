@@ -3,10 +3,10 @@ name: MLOps Pipeline
 on:
   push:
     branches:
-      - main
+      - walid
   pull_request:
     branches:
-      - main
+      - walid
 
 jobs:
   pipeline:
