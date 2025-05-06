@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./home.css";
-import { FaVolumeUp, FaUserCircle } from "react-icons/fa";
+import { FaVolumeUp } from "react-icons/fa";
 import axios from "axios";
 
-const NavBar = ({ handleLogout,user }) => {
+const NavBar = ({ handleLogout, user }) => {
   const [showDropdown, setShowDropdown] = useState(false);
-   return (
+  return (
     <div className="header">
       <img src="/DoxLogo.png" alt="Dox Logo" className="logo" />
       <div className="user-icon" onClick={() => setShowDropdown(!showDropdown)}>
-        
-      <h4> {user}</h4>
+        <h4>{user}</h4>
         {showDropdown && (
           <div className="dropdown-menu">
             <button onClick={handleLogout}>Logout</button>
@@ -22,31 +21,52 @@ const NavBar = ({ handleLogout,user }) => {
   );
 };
 
-const Home = (props) => {
-  const [isFraud, setIsFraud] = useState(false);
-  const navigate = useNavigate();
-  const [language, setLanguage] = useState("fr");
-  const [translatedData, setTranslatedData] = useState(null);
-  const [selectedImageName, setSelectedImageName] = useState(null);
-  const [documentType, setDocumentType] = useState(null);
-  const [user, setUser] = useState(() => {
-    return JSON.parse(localStorage.getItem("user")) || null;
-  });
-  
-  const Logout = () => {
-    props.handleLogout();
-    navigate("/login");
+const EditableCell = ({ value, onChange }) => {
+  const [editing, setEditing] = useState(false);
+  const [currentValue, setCurrentValue] = useState(value);
+
+  const handleBlur = () => {
+    setEditing(false);
+    onChange(currentValue);
   };
 
-  const data = {
+  return editing ? (
+    <input
+      autoFocus
+      value={currentValue}
+      onChange={(e) => setCurrentValue(e.target.value)}
+      onBlur={handleBlur}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") handleBlur();
+      }}
+    />
+  ) : (
+    <span onClick={() => setEditing(true)}>{currentValue}</span>
+  );
+};
+
+const Home = (props) => {
+  const navigate = useNavigate();
+  const [language, setLanguage] = useState("fr");
+  const [data, setData] = useState({
     sexe: "Homme",
     age: 32,
-    Doctor: "Gynecologue",
+    Medecin: "Gynecologue",
     R: [
       { date: "01/01/2025", description: "pharmacie" },
       { date: "05/01/2025", description: "G1" },
     ],
-  };
+  });
+  const [translatedData, setTranslatedData] = useState(null);
+  const [selectedImageName, setSelectedImageName] = useState(null);
+  const [documentType, setDocumentType] = useState(null);
+  const [user] = useState(() => JSON.parse(localStorage.getItem("user")) || null);
+  const [loadingTranslation, setLoadingTranslation] = useState(false);
+
+  const Logout = () => {
+    props.handleLogout();
+    navigate("/login");
+  }; 
 
   useEffect(() => {
     if (language !== "fr") {
@@ -57,35 +77,35 @@ const Home = (props) => {
   }, [language]);
 
   const translateData = async (selectedLang) => {
+    setLoadingTranslation(true); // Début du chargement
     try {
       const response = await axios.post("http://127.0.0.1:8000/api/translate/", {
         ...data,
         language: selectedLang,
       });
-      console.log("Translated Data:", response.data);
       setTranslatedData(response.data);
+      console.log("Translated data:", response.data);
     } catch (error) {
       console.error("Translation error:", error);
+    } finally {
+      setLoadingTranslation(false); // Fin du chargement
     }
   };
+  
 
   const handleImageUpload = async (event) => {
     const file = event.target.files[0];
     if (file) {
       setSelectedImageName(file.name);
-  
       const formData = new FormData();
       formData.append("image", file);
-  
+
       try {
         const response = await axios.post("http://127.0.0.1:8000/api/classify/", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+          headers: { "Content-Type": "multipart/form-data" },
         });
-  
-        console.log("Prediction response:", response.data);
-        setDocumentType(response.data.label); // stocke le type de document
+        setDocumentType(response.data.label);
+        setData(response.data.data || {});
       } catch (error) {
         console.error("Erreur lors de l'envoi de l'image:", error);
       }
@@ -93,53 +113,42 @@ const Home = (props) => {
   };
 
   const readTableContent = async () => {
-    const textToRead = extractTableContent(data);
-    console.log("Données envoyées à l'API:", textToRead);
-
+    const textToRead = JSON.stringify(data);
     try {
-      const response = await axios.post("http://127.0.0.1:8000/api/text-to-speech/", {
+      await axios.post("http://127.0.0.1:8000/api/text-to-speech/", {
         phrase: textToRead,
-        language: language, // La langue sélectionnée
+        language,
       });
-     
     } catch (error) {
       console.error("Erreur lors de la lecture du texte :", error);
     }
   };
-  
-  // Fonction pour extraire le texte du tableau sous forme de chaîne
-  const extractTableContent = (data) => {
-    let text = `Sexe: ${data.sexe}, Age: ${data.age}, Médecin: ${data.Doctor}.` ;
-    text += "";
-    data.R.forEach((entry) => {
-      text += `Le ${entry.date}, ${entry.description}.` ;
-    });
-    return text;
-  };
-  
-  const displayData = translatedData || data;
-  const headers = Object.keys(displayData).filter((key) => key !== "R" && key !== "language");
 
-  const resultHeaders = displayData.R && displayData.R.length > 0 ? Object.keys(displayData.R[0]) : [];
+  const handleEdit = (key, value, parentKey = null, index = null) => {
+    const updated = { ...data };
+    if (parentKey && Array.isArray(data[parentKey])) {
+      updated[parentKey][index][key] = value;
+    } else {
+      updated[key] = value;
+    }
+    setData(updated);
+  };
+
+  const displayData = translatedData || data;
 
   return (
+    
     <div>
       <NavBar handleLogout={Logout} user={props.user} />
       <div className="home-container">
         <div className="upload-section">
-          <p>Upload your Image.. To extract your data</p>
+          <p>Upload your Image... To extract your data</p>
           <div className="upload-buttons">
-            <button className="btn take-image">📷 Take Image</button>
             <label className="btn upload-document">
               ⬇ Upload Image
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                style={{ display: "none" }} // Cacher l'input file
-              />
+              <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: "none" }} />
             </label>
-            {selectedImageName && <span className="file-name">{selectedImageName}</span>} 
+            {selectedImageName && <span className="file-name">{selectedImageName}</span>}
           </div>
         </div>
         <div className="data-container">
@@ -158,43 +167,54 @@ const Home = (props) => {
                   Document Type: <strong>{documentType}</strong>
                 </p>
               )}
+              {loadingTranslation? (
+                <div className="spinner-container">
+                  <div className="spinner"></div>
+                </div>) : ( 
+              <table className="structured-table">
+  <thead>
+    <tr>
+      {Object.entries(displayData).map(([key, value]) => {
+        if (Array.isArray(value) && typeof value[0] === "object") {
+          return value[0] &&
+            Object.keys(value[0]).map((subKey) => (
+              <th key={`${key}-${subKey}`}>{`${key}.${subKey}`}</th>
+            ));
+        } else {
+          return <th key={key}>{key}</th>;
+        }
+      })}
+    </tr>
+  </thead>
+  <tbody key={language + JSON.stringify(displayData)}> {/* FORCE RE-RENDER */}
+    <tr>
+      {Object.entries(displayData).map(([key, value]) => {
+        if (Array.isArray(value) && typeof value[0] === "object") {
+          return value[0] &&
+            Object.keys(value[0]).map((subKey) => (
+              <td key={`${key}-${subKey}`}>
+                {value.map((item, i) => (
+                  <div key={`${key}-${subKey}-${i}`}>
+                    <EditableCell
+                      value={item[subKey]}
+                      onChange={(val) => handleEdit(subKey, val, key, i)}
+                    />
+                  </div>
+                ))}
+              </td>
+            ));
+        } else {
+          return (
+            <td key={key}>
+              <EditableCell value={value} onChange={(val) => handleEdit(key, val)} />
+            </td>
+          );
+        }
+      })}
+    </tr>
+  </tbody>
+</table>)}
 
-
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    {headers.map((header, index) => (
-                      <th key={index}>{header.charAt(0).toUpperCase() + header.slice(1)}</th>
-                    ))}
-                    {resultHeaders.map((header, index) => (
-                      <th key={index + headers.length}>{header.charAt(0).toUpperCase() + header.slice(1)}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {displayData.R && displayData.R.length > 0 ? (
-                    displayData.R.map((row, rowIndex) => (
-                      <tr key={rowIndex}>
-                        {rowIndex === 0 &&
-                          headers.map((header, index) => (
-                            <td key={index} rowSpan={displayData.R.length}>
-                              {displayData[header]}
-                            </td>
-                          ))}
-                        {resultHeaders.map((key, index) => (
-                          <td key={index + headers.length}>{row[key]}</td>
-                        ))}
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={headers.length + resultHeaders.length}>Aucune donnée disponible</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-
-              {isFraud && <p className="fraud-detection">⚠ Fraud detection: A male cannot visit a gynecologist.</p>}
             </div>
             <div className="icons-container">
               <FaVolumeUp className="icon" title="Lire à haute voix" onClick={readTableContent} />

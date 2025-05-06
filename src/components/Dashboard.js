@@ -5,8 +5,9 @@ import { FaUsers, FaChartBar } from "react-icons/fa";
 import "./AdminDashboard.css";
 import { useNavigate } from "react-router-dom";
 import axios from 'axios';
-import bcrypt from 'bcryptjs';
+
 import { loadModels, validateFace } from '../utils/faceDetection';
+import Statistics from "./Statistics";
 
 const data = [
   { name: "Jan", users: 40 },
@@ -122,10 +123,9 @@ const Dashboard = ({ handleLogout }) => {
       return;
     }
     try {
-      const hashedPassword = await bcrypt.hash(userData.password, 10);
       const formData = new FormData();
       formData.append('email', userData.email);
-      formData.append('password', hashedPassword);
+      formData.append('password', userData.password);
       
       if (userData.image) {
         const response = await fetch(userData.image);
@@ -210,19 +210,8 @@ const handleDelete = async () => {
 
       <div className="main-content">
         {selectedTab === "dashboard" && (
-          <div>
-            <h2>Dashboard</h2>
-            <div className="chart-container">
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={data}>
-                  <XAxis dataKey="name" stroke="#8884d8" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="users" fill="#4A90E2" barSize={50} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
+          
+          <Statistics/>
         )}
 
          {selectedTab === "users" && (
