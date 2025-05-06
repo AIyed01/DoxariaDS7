@@ -28,7 +28,7 @@ jobs:
 
     - name: Run data pipeline
       run: |
-        python pipeline1/your_script.py  # Adjust the path to where your script is located
+        python pipeline1/run_pipeline.py  # Adjust the path to where your script is located
       env:
         # If needed, add any environment variables here, e.g. MLflow tracking URI, etc.
         MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
