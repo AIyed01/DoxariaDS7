@@ -10,27 +10,46 @@ on:
 
 jobs:
   pipeline:
-    runs-on: ubuntu-latest  # or another OS if needed, e.g., 'windows-latest'
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3  # Updated to v3
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4  # Updated to v4
       with:
-        python-version: 3.8  # specify the Python version you want
+        python-version: '3.8'  # Quotes for version number
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt  # Install your project dependencies
+        pip install -r requirements.txt
 
-    - name: Set the dataset directory environment variable
-      run: echo "DATASET_DIR=${{ secrets.DATASET_DIR }}" >> $GITHUB_ENV
+    - name: Debug environment variables
+      run: |
+        echo "DATASET_DIR is set to: ${{ secrets.DATASET_DIR }}"
+        echo "Current directory: $(pwd)"
+        echo "Directory contents:"
+        ls -la
+      env:
+        DATASET_DIR: ${{ secrets.DATASET_DIR }}
+
+    - name: Verify dataset access
+      run: |
+        if [ ! -d "$DATASET_DIR" ]; then
+          echo "::error::Dataset directory not found: $DATASET_DIR"
+          exit 1
+        fi
+        echo "Dataset directory exists at: $DATASET_DIR"
+        echo "Train folder contents:"
+        ls -la "$DATASET_DIR/train" || echo "::error::Train folder missing"
+        echo "Test folder contents:"
+        ls -la "$DATASET_DIR/test" || echo "::error::Test folder missing"
+      env:
+        DATASET_DIR: ${{ secrets.DATASET_DIR }}
 
     - name: Run pipeline
-      run: python pipeline1/run_pipeline.py  # Adjust the path to your script
+      run: python pipeline1/run_pipeline.py
       env:
-        DATASET_DIR: ${{ secrets.DATASET_DIR }}  # Use the secret here
-
+        DATASET_DIR: ${{ secrets.DATASET_DIR }}
