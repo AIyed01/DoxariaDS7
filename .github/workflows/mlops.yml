@@ -42,10 +42,10 @@ jobs:
         mkdir -p dataset/train dataset/test
 
         # Move the train folder and its contents
-        mv dataset_raw/data_doxaria/dataset/train dataset/train || echo "::error::Train folder not found"
+        mv dataset_raw/data_doxaria/dataset/train/* dataset/train || echo "::error::Train folder not found"
 
         # Move the test folder and its contents
-        mv dataset_raw/data_doxaria/dataset/test dataset/test || echo "::error::Test folder not found"
+        mv dataset_raw/data_doxaria/dataset/test/* dataset/test || echo "::error::Test folder not found"
 
         echo "Dataset organized into 'dataset/train' and 'dataset/test'"
 
