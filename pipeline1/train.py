@@ -6,7 +6,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import EarlyStopping
 import tensorflow as tf
 
-mlflow.set_tracking_uri(r"C:\Users\walid\Downloads\DSPI\DoxariaDS7\mlruns")
+mlflow.set_tracking_uri("file:///C:/Users/walid/Downloads/DSPI/DoxariaDS7/mlruns")
 
 if tf.config.list_physical_devices('GPU'):
     print("GPU is available!")
