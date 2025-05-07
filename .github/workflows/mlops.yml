@@ -33,7 +33,10 @@ jobs:
         gdown --id ${{ secrets.GDRIVE_FILE_ID }} --output dataset.zip
         unzip dataset.zip -d dataset
         echo "Dataset downloaded and extracted."
-
+        # Move nested train/test folders to expected location
+        mkdir -p dataset
+        mv dataset_raw/data_doxaria/dataset/train dataset/train
+        mv dataset_raw/data_doxaria/dataset/test dataset/test
     - name: Verify dataset access
       run: |
         echo "Checking dataset directory..."
