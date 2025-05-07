@@ -19,23 +19,18 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: '3.8'  # Specify the Python version you want
+        python-version: 3.8  # specify the Python version you want
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt  # Assuming you have a requirements.txt for dependencies
+        pip install -r requirements.txt  # Install your project dependencies
 
-    - name: Run data pipeline
-      run: |
-        python pipeline1/run_pipeline.py  # Adjust the path to where your script is located
+    - name: Set the dataset directory environment variable
+      run: echo "DATASET_DIR=${{ secrets.DATASET_DIR }}" >> $GITHUB_ENV
+
+    - name: Run pipeline
+      run: python pipeline1/run_pipeline.py  # Adjust the path to your script
       env:
-        # If needed, add any environment variables here, e.g. MLflow tracking URI, etc.
-        MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
-
-    - name: Commit trained model (Optional)
-      run: |
-        git add model.h5
-        git commit -m "Add trained model"
-        git push
+        DATASET_DIR: ${{ secrets.DATASET_DIR }}  # Use the secret here
 
