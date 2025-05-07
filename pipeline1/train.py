@@ -5,9 +5,12 @@ from tensorflow.keras.layers import GlobalAveragePooling2D, Dense, Dropout
 from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import EarlyStopping
 import tensorflow as tf
+import os
 
-mlflow.set_tracking_uri("file:///C:/Users/walid/Downloads/DSPI/DoxariaDS7/mlruns")
+# Use a relative path for MLflow tracking that works in any environment
+mlflow.set_tracking_uri("./mlruns")
 
+# Check for GPU availability
 if tf.config.list_physical_devices('GPU'):
     print("GPU is available!")
 else:
@@ -22,6 +25,9 @@ def build_model(input_shape=(224, 224, 3), num_classes=3):
     return model
 
 def train_model(model, train_gen, val_gen, epochs=10):
+    # Create mlruns directory if it doesn't exist
+    os.makedirs("./mlruns", exist_ok=True)
+    
     # Start MLflow run
     mlflow.start_run()
 
