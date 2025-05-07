@@ -30,7 +30,8 @@ jobs:
     - name: Download dataset from Google Drive
       run: |
         echo "Downloading dataset from Google Drive..."
-        gdown --id ${{ secrets.GDRIVE_FILE_ID }} --output dataset.zip
+        gdown --id ${{ secrets.GDRIVE_FILE_ID }} --output dataset.zip || { echo "Failed to download dataset from Google Drive"; exit 1; }
+        echo "Unzipping dataset..."
         unzip dataset.zip -d dataset_raw
         echo "Dataset downloaded and extracted."
         echo "Extracted structure:"
@@ -39,6 +40,8 @@ jobs:
         mkdir -p dataset
         mv dataset_raw/**/data_doxaria/dataset/train dataset/train
         mv dataset_raw/**/data_doxaria/dataset/test dataset/test
+        echo "Dataset organized into 'dataset/train' and 'dataset/test'"
+
     - name: Verify dataset access
       run: |
         echo "Checking dataset directory..."
