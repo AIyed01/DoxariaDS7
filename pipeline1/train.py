@@ -6,8 +6,6 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import EarlyStopping
 import tensorflow as tf
 import os
-import tempfile
-from tensorflow.keras.models import load_model
 import numpy as np
 
 # Use a relative path for MLflow tracking that works in any environment
@@ -45,6 +43,13 @@ def train_model(model, train_gen, val_gen, epochs=3):
         sample_images, _ = next(iter(train_gen))
         sample_input = sample_images[:1]  # Just take one sample
         
+        # Check if sample_input is already a NumPy array
+        if isinstance(sample_input, np.ndarray):
+            input_example = sample_input  # It's already a NumPy array
+        else:
+            # Try to convert if it's a TensorFlow tensor
+            input_example = sample_input.numpy()
+        
         model.compile(optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
         
         es = EarlyStopping(patience=3, restore_best_weights=True)
@@ -76,8 +81,8 @@ def train_model(model, train_gen, val_gen, epochs=3):
         
         # Log the model with a signature
         signature = mlflow.models.infer_signature(
-            sample_input,
-            model.predict(sample_input)
+            input_example,
+            model.predict(input_example)
         )
         
         # Log the model with proper signature and input example
@@ -85,7 +90,7 @@ def train_model(model, train_gen, val_gen, epochs=3):
             model, 
             "tensorflow-model",
             signature=signature,
-            input_example=sample_input.numpy()
+            input_example=input_example  # Use the properly handled input example
         )
         
         print("Model training and logging completed successfully")
