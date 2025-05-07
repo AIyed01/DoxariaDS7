@@ -14,42 +14,34 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3  # Updated to v3
+      uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/setup-python@v4  # Updated to v4
+      uses: actions/setup-python@v4
       with:
-        python-version: '3.8'  # Quotes for version number
+        python-version: '3.8'
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+        pip install gdown  # Required to download from Google Drive
 
-    - name: Debug environment variables
+    - name: Download dataset from Google Drive
       run: |
-        echo "DATASET_DIR is set to: ${{ secrets.DATASET_DIR }}"
-        echo "Current directory: $(pwd)"
-        echo "Directory contents:"
-        ls -la
-      env:
-        DATASET_DIR: ${{ secrets.DATASET_DIR }}
+        echo "Downloading dataset from Google Drive..."
+        gdown --id ${{ secrets.GDRIVE_FILE_ID }} --output dataset.zip
+        unzip dataset.zip -d dataset
+        echo "Dataset downloaded and extracted."
 
     - name: Verify dataset access
       run: |
-        if [ ! -d "$DATASET_DIR" ]; then
-          echo "::error::Dataset directory not found: $DATASET_DIR"
-          exit 1
-        fi
-        echo "Dataset directory exists at: $DATASET_DIR"
-        echo "Train folder contents:"
-        ls -la "$DATASET_DIR/train" || echo "::error::Train folder missing"
-        echo "Test folder contents:"
-        ls -la "$DATASET_DIR/test" || echo "::error::Test folder missing"
-      env:
-        DATASET_DIR: ${{ secrets.DATASET_DIR }}
+        echo "Checking dataset directory..."
+        ls -la dataset
+        ls -la dataset/train || echo "::error::Train folder missing"
+        ls -la dataset/test || echo "::error::Test folder missing"
 
     - name: Run pipeline
       run: python pipeline1/run_pipeline.py
       env:
-        DATASET_DIR: ${{ secrets.DATASET_DIR }}
+        DATASET_DIR: dataset
