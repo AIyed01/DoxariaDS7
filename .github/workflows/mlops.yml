@@ -31,15 +31,22 @@ jobs:
       run: |
         echo "Downloading dataset from Google Drive..."
         gdown --id ${{ secrets.GDRIVE_FILE_ID }} --output dataset.zip || { echo "Failed to download dataset from Google Drive"; exit 1; }
+
         echo "Unzipping dataset..."
-        unzip dataset.zip -d dataset_raw
-        echo "Dataset downloaded and extracted."
+        unzip dataset.zip -d dataset_raw || { echo "Failed to unzip dataset"; exit 1; }
+
         echo "Extracted structure:"
         find dataset_raw
-        # Move nested train/test folders to expected location
-        mkdir -p dataset
-        mv dataset_raw/**/data_doxaria/dataset/train dataset/train
-        mv dataset_raw/**/data_doxaria/dataset/test dataset/test
+
+        # Move train and test folders to expected location
+        mkdir -p dataset/train dataset/test
+
+        # Move the train folder and its contents
+        mv dataset_raw/data_doxaria/dataset/train dataset/train || echo "::error::Train folder not found"
+
+        # Move the test folder and its contents
+        mv dataset_raw/data_doxaria/dataset/test dataset/test || echo "::error::Test folder not found"
+
         echo "Dataset organized into 'dataset/train' and 'dataset/test'"
 
     - name: Verify dataset access
